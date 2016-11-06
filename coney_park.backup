@@ -1,0 +1,1421 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 9.1.3
+-- Dumped by pg_dump version 9.1.3
+-- Started on 2013-12-12 00:39:25
+
+SET statement_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+
+--
+-- TOC entry 188 (class 3079 OID 11639)
+-- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
+--
+
+CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
+
+
+--
+-- TOC entry 2076 (class 0 OID 0)
+-- Dependencies: 188
+-- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+
+
+SET search_path = public, pg_catalog;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- TOC entry 161 (class 1259 OID 16394)
+-- Dependencies: 6
+-- Name: cab_boleta; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE cab_boleta (
+    nro_serie character varying(4) NOT NULL,
+    nro_doc character varying(6),
+    cliente character varying(50),
+    domicilio character varying(50),
+    fecha_emision date,
+    total numeric(10,2),
+    id_caja character varying(4)
+);
+
+
+ALTER TABLE public.cab_boleta OWNER TO postgres;
+
+--
+-- TOC entry 162 (class 1259 OID 16397)
+-- Dependencies: 6
+-- Name: cajas; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE cajas (
+    id_caja character varying(4) NOT NULL,
+    id_sucur character varying(4) NOT NULL,
+    nom_caja character varying(12) NOT NULL,
+    num_obs integer NOT NULL
+);
+
+
+ALTER TABLE public.cajas OWNER TO postgres;
+
+--
+-- TOC entry 163 (class 1259 OID 16400)
+-- Dependencies: 1951 6
+-- Name: cargo; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE cargo (
+    id_cargo character varying(4) NOT NULL,
+    nombre_cargo character varying(30) NOT NULL,
+    sueldo numeric(6,2) NOT NULL,
+    habilidad_cargo character varying(25),
+    CONSTRAINT sueldo CHECK ((sueldo >= (100)::numeric))
+);
+
+
+ALTER TABLE public.cargo OWNER TO postgres;
+
+--
+-- TOC entry 164 (class 1259 OID 16403)
+-- Dependencies: 1952 6
+-- Name: cliente_hijo; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE cliente_hijo (
+    id_hijo character varying(4) NOT NULL,
+    id_cli character varying(4) NOT NULL,
+    nom_hij character varying(50) NOT NULL,
+    e_mail character varying(50),
+    CONSTRAINT e_mail CHECK (((e_mail)::text ~~ '%@%'::text))
+);
+
+
+ALTER TABLE public.cliente_hijo OWNER TO postgres;
+
+--
+-- TOC entry 165 (class 1259 OID 16406)
+-- Dependencies: 1953 6
+-- Name: clientes; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE clientes (
+    id_cli character varying(4) NOT NULL,
+    nom_cli character varying(50) NOT NULL,
+    direccion character varying(50) NOT NULL,
+    e_mail character varying(50),
+    tarjeta character varying(2) NOT NULL,
+    CONSTRAINT e_mail CHECK (((e_mail)::text ~~ '%@%'::text))
+);
+
+
+ALTER TABLE public.clientes OWNER TO postgres;
+
+--
+-- TOC entry 166 (class 1259 OID 16409)
+-- Dependencies: 1954 6
+-- Name: cumpleanios; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE cumpleanios (
+    id_cum character varying(4) NOT NULL,
+    id_hijo character varying(4) NOT NULL,
+    fecha_nac date NOT NULL,
+    id_show character varying(5) NOT NULL,
+    id_sucur character varying(4) NOT NULL,
+    CONSTRAINT fecha CHECK (((fecha_nac >= '2000-01-01'::date) AND (fecha_nac <= '2013-12-31'::date)))
+);
+
+
+ALTER TABLE public.cumpleanios OWNER TO postgres;
+
+--
+-- TOC entry 167 (class 1259 OID 16412)
+-- Dependencies: 1956 1957 1958 6
+-- Name: det_boleta; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE det_boleta (
+    nro_serie character varying(4) NOT NULL,
+    nro_doc character varying(6) NOT NULL,
+    cantidad integer NOT NULL,
+    precio_unit numeric(6,2) NOT NULL,
+    subtotal numeric(6,2) NOT NULL,
+    codigos character varying(5) NOT NULL,
+    linea integer NOT NULL,
+    CONSTRAINT cantidad CHECK ((cantidad >= 0)),
+    CONSTRAINT precio_unit CHECK ((precio_unit >= (0)::numeric)),
+    CONSTRAINT subtotal CHECK ((subtotal >= (0)::numeric))
+);
+
+
+ALTER TABLE public.det_boleta OWNER TO postgres;
+
+--
+-- TOC entry 181 (class 1259 OID 16986)
+-- Dependencies: 6 167
+-- Name: det_boleta_linea_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE det_boleta_linea_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.det_boleta_linea_seq OWNER TO postgres;
+
+--
+-- TOC entry 2077 (class 0 OID 0)
+-- Dependencies: 181
+-- Name: det_boleta_linea_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE det_boleta_linea_seq OWNED BY det_boleta.linea;
+
+
+--
+-- TOC entry 2078 (class 0 OID 0)
+-- Dependencies: 181
+-- Name: det_boleta_linea_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('det_boleta_linea_seq', 4, true);
+
+
+--
+-- TOC entry 184 (class 1259 OID 17075)
+-- Dependencies: 6
+-- Name: disponibilidad_servicios; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE disponibilidad_servicios (
+    id_sucur character varying(4) NOT NULL,
+    id_ser character varying(4) NOT NULL,
+    estado character varying(20) NOT NULL,
+    id integer NOT NULL
+);
+
+
+ALTER TABLE public.disponibilidad_servicios OWNER TO postgres;
+
+--
+-- TOC entry 183 (class 1259 OID 17073)
+-- Dependencies: 6 184
+-- Name: disponibilidad_servicios_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE disponibilidad_servicios_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.disponibilidad_servicios_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 2079 (class 0 OID 0)
+-- Dependencies: 183
+-- Name: disponibilidad_servicios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE disponibilidad_servicios_id_seq OWNED BY disponibilidad_servicios.id;
+
+
+--
+-- TOC entry 2080 (class 0 OID 0)
+-- Dependencies: 183
+-- Name: disponibilidad_servicios_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('disponibilidad_servicios_id_seq', 5, true);
+
+
+--
+-- TOC entry 168 (class 1259 OID 16415)
+-- Dependencies: 6
+-- Name: empleados; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE empleados (
+    id_emp character varying(4) NOT NULL,
+    nom_emp character varying(50) NOT NULL,
+    id_sucur character varying(4) NOT NULL,
+    id_cargo character varying(4) NOT NULL,
+    domicilio character varying(50) NOT NULL,
+    dni character varying(9) NOT NULL
+);
+
+
+ALTER TABLE public.empleados OWNER TO postgres;
+
+--
+-- TOC entry 169 (class 1259 OID 16418)
+-- Dependencies: 1959 6
+-- Name: encargado_caja; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE encargado_caja (
+    id_encar_caja character varying(5) NOT NULL,
+    id_caja character varying(4) NOT NULL,
+    id_emp character varying(4) NOT NULL,
+    fecha_caja date NOT NULL,
+    CONSTRAINT fecha_caja CHECK ((fecha_caja > '2000-01-01'::date))
+);
+
+
+ALTER TABLE public.encargado_caja OWNER TO postgres;
+
+--
+-- TOC entry 187 (class 1259 OID 17091)
+-- Dependencies: 6
+-- Name: ganador_promo; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE ganador_promo (
+    id_sucur character varying(4) NOT NULL,
+    id_cli character varying(4) NOT NULL,
+    id_prom character varying(5) NOT NULL,
+    id_ganador character varying(4) NOT NULL
+);
+
+
+ALTER TABLE public.ganador_promo OWNER TO postgres;
+
+--
+-- TOC entry 170 (class 1259 OID 16421)
+-- Dependencies: 1960 6
+-- Name: juegos; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE juegos (
+    id_jue character varying(4) NOT NULL,
+    nom_jue character varying(40) NOT NULL,
+    tipo character varying(15) NOT NULL,
+    costo numeric(6,2) NOT NULL,
+    CONSTRAINT costo CHECK ((costo > (0)::numeric))
+);
+
+
+ALTER TABLE public.juegos OWNER TO postgres;
+
+--
+-- TOC entry 185 (class 1259 OID 17081)
+-- Dependencies: 6
+-- Name: mantenimiento; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE mantenimiento (
+    id_man character varying(4) NOT NULL,
+    id_sucur character varying(4) NOT NULL,
+    estado character varying(15) NOT NULL
+);
+
+
+ALTER TABLE public.mantenimiento OWNER TO postgres;
+
+--
+-- TOC entry 186 (class 1259 OID 17086)
+-- Dependencies: 6
+-- Name: persona_man; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE persona_man (
+    id_man character varying(4) NOT NULL,
+    nombre_personal character varying(50) NOT NULL,
+    rugro character varying(15) NOT NULL
+);
+
+
+ALTER TABLE public.persona_man OWNER TO postgres;
+
+--
+-- TOC entry 171 (class 1259 OID 16424)
+-- Dependencies: 1961 6
+-- Name: productos; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE productos (
+    id_prod character varying(5) NOT NULL,
+    nom_prod character varying(30) NOT NULL,
+    costo numeric(6,2) NOT NULL,
+    descrip character varying(50),
+    CONSTRAINT costo CHECK ((costo > (0)::numeric))
+);
+
+
+ALTER TABLE public.productos OWNER TO postgres;
+
+--
+-- TOC entry 172 (class 1259 OID 16427)
+-- Dependencies: 1962 6
+-- Name: promociones; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE promociones (
+    id_prom character varying(5) NOT NULL,
+    nom_prom character varying(50) NOT NULL,
+    dia_prom character varying(10) NOT NULL,
+    descrip character varying(70),
+    CONSTRAINT dia_prom CHECK (((((((((dia_prom)::text ~~ 'lunes'::text) OR ((dia_prom)::text ~~ 'martes'::text)) OR ((dia_prom)::text ~~ 'miercoles'::text)) OR ((dia_prom)::text ~~ 'jueves'::text)) OR ((dia_prom)::text ~~ 'viernes'::text)) OR ((dia_prom)::text ~~ 'sabado'::text)) OR ((dia_prom)::text ~~ 'todos'::text)))
+);
+
+
+ALTER TABLE public.promociones OWNER TO postgres;
+
+--
+-- TOC entry 182 (class 1259 OID 17062)
+-- Dependencies: 6
+-- Name: servicios; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE servicios (
+    id_ser character varying(4) NOT NULL,
+    nombre character varying(35),
+    descrip character varying(50)
+);
+
+
+ALTER TABLE public.servicios OWNER TO postgres;
+
+--
+-- TOC entry 173 (class 1259 OID 16430)
+-- Dependencies: 1963 6
+-- Name: shows; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE shows (
+    id_show character varying(5) NOT NULL,
+    nom_shows character varying(30) NOT NULL,
+    costo numeric(6,2) NOT NULL,
+    descrip character varying(100),
+    CONSTRAINT costo CHECK ((costo > (0)::numeric))
+);
+
+
+ALTER TABLE public.shows OWNER TO postgres;
+
+--
+-- TOC entry 174 (class 1259 OID 16433)
+-- Dependencies: 6
+-- Name: sucursales; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE sucursales (
+    id_sucur character varying(4) NOT NULL,
+    distrito character varying(30) NOT NULL,
+    direccion character varying(30) NOT NULL,
+    jefe character varying(50) NOT NULL
+);
+
+
+ALTER TABLE public.sucursales OWNER TO postgres;
+
+--
+-- TOC entry 175 (class 1259 OID 16436)
+-- Dependencies: 1964 6
+-- Name: ubicacion_juegos; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE ubicacion_juegos (
+    id_jue character varying(4) NOT NULL,
+    id_sucur character varying(4) NOT NULL,
+    num_reparaciones integer NOT NULL,
+    serie character varying(8) NOT NULL,
+    CONSTRAINT num_reparaciones CHECK ((num_reparaciones >= 0))
+);
+
+
+ALTER TABLE public.ubicacion_juegos OWNER TO postgres;
+
+--
+-- TOC entry 176 (class 1259 OID 16676)
+-- Dependencies: 1946 6
+-- Name: v_vista; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW v_vista AS
+    SELECT count(ch.id_hijo) AS num_hijos, c.nom_cli FROM cliente_hijo ch, clientes c WHERE (((ch.id_cli)::text = (c.id_cli)::text) AND ((c.tarjeta)::text ~~ 'no'::text)) GROUP BY ch.id_cli, c.nom_cli ORDER BY ch.id_cli;
+
+
+ALTER TABLE public.v_vista OWNER TO postgres;
+
+--
+-- TOC entry 178 (class 1259 OID 16708)
+-- Dependencies: 1948 6
+-- Name: v_vista_num_electricos; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW v_vista_num_electricos AS
+    SELECT s.id_sucur, electrico.num_electricos FROM (sucursales s LEFT JOIN (SELECT uj.id_sucur, count(uj.serie) AS num_electricos FROM ubicacion_juegos uj, juegos j, sucursales s WHERE ((((uj.id_jue)::text = (j.id_jue)::text) AND ((uj.id_sucur)::text = (s.id_sucur)::text)) AND ((j.tipo)::text ~~ 'electrico'::text)) GROUP BY uj.id_sucur ORDER BY uj.id_sucur) electrico ON (((electrico.id_sucur)::text = (s.id_sucur)::text)));
+
+
+ALTER TABLE public.v_vista_num_electricos OWNER TO postgres;
+
+--
+-- TOC entry 177 (class 1259 OID 16704)
+-- Dependencies: 1947 6
+-- Name: v_vista_num_mecanicos; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW v_vista_num_mecanicos AS
+    SELECT s.id_sucur, mecanico.num_mecanicos FROM (sucursales s LEFT JOIN (SELECT uj.id_sucur, count(uj.serie) AS num_mecanicos FROM ubicacion_juegos uj, juegos j, sucursales s WHERE ((((uj.id_jue)::text = (j.id_jue)::text) AND ((uj.id_sucur)::text = (s.id_sucur)::text)) AND ((j.tipo)::text ~~ 'mecanico'::text)) GROUP BY uj.id_sucur ORDER BY uj.id_sucur) mecanico ON (((mecanico.id_sucur)::text = (s.id_sucur)::text)));
+
+
+ALTER TABLE public.v_vista_num_mecanicos OWNER TO postgres;
+
+--
+-- TOC entry 179 (class 1259 OID 16712)
+-- Dependencies: 1949 6
+-- Name: v_vista_num_total; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW v_vista_num_total AS
+    SELECT s.id_sucur, total.num_total FROM (sucursales s LEFT JOIN (SELECT uj.id_sucur, count(uj.serie) AS num_total FROM ubicacion_juegos uj, juegos j, sucursales s WHERE (((uj.id_jue)::text = (j.id_jue)::text) AND ((uj.id_sucur)::text = (s.id_sucur)::text)) GROUP BY uj.id_sucur ORDER BY uj.id_sucur) total ON (((total.id_sucur)::text = (s.id_sucur)::text)));
+
+
+ALTER TABLE public.v_vista_num_total OWNER TO postgres;
+
+--
+-- TOC entry 180 (class 1259 OID 16716)
+-- Dependencies: 1950 6
+-- Name: v_vista_vista_juegos_numeros; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW v_vista_vista_juegos_numeros AS
+    SELECT total.id_sucur, meca.num_mecanicos AS numero_de_mecanicos, ele.num_electricos AS numero_de_electronicos, total.num_total AS total FROM v_vista_num_mecanicos meca, v_vista_num_electricos ele, v_vista_num_total total WHERE ((((total.id_sucur)::text = (meca.id_sucur)::text) AND ((total.id_sucur)::text = (ele.id_sucur)::text)) AND ((meca.id_sucur)::text = (ele.id_sucur)::text));
+
+
+ALTER TABLE public.v_vista_vista_juegos_numeros OWNER TO postgres;
+
+--
+-- TOC entry 1955 (class 2604 OID 16988)
+-- Dependencies: 181 167
+-- Name: linea; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY det_boleta ALTER COLUMN linea SET DEFAULT nextval('det_boleta_linea_seq'::regclass);
+
+
+--
+-- TOC entry 1965 (class 2604 OID 17078)
+-- Dependencies: 183 184 184
+-- Name: id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY disponibilidad_servicios ALTER COLUMN id SET DEFAULT nextval('disponibilidad_servicios_id_seq'::regclass);
+
+
+--
+-- TOC entry 2051 (class 0 OID 16394)
+-- Dependencies: 161
+-- Data for Name: cab_boleta; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY cab_boleta (nro_serie, nro_doc, cliente, domicilio, fecha_emision, total, id_caja) FROM stdin;
+001	000001	LUIS BEAX	AV PALOMA 345	2013-11-13	20.00	c001
+002	000002	ANDRES VERA 	AV. 0LM0S 456	2013-11-13	11.00	c002
+003	000003	MIRIAM RAMOS	JR.AVIONES 456	2013-11-13	15.00	c003
+\.
+
+
+--
+-- TOC entry 2052 (class 0 OID 16397)
+-- Dependencies: 162
+-- Data for Name: cajas; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY cajas (id_caja, id_sucur, nom_caja, num_obs) FROM stdin;
+c001	u001	caja 1	0
+c003	u003	caja 3	0
+c004	u004	caja 4	0
+c005	u005	caja 5	0
+c002	u002	caja2	1
+\.
+
+
+--
+-- TOC entry 2053 (class 0 OID 16400)
+-- Dependencies: 163
+-- Data for Name: cargo; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY cargo (id_cargo, nombre_cargo, sueldo, habilidad_cargo) FROM stdin;
+JE	jefe	1500.00	experto
+CAJE	cajero	500.00	experto
+CAJS	cajero	350.00	sin experiencia
+GUAE	guachiman	200.00	experto
+GUAS	guachiman	150.00	sin experiencia
+GUIE	guia	180.00	experto
+GUIS	guia	100.00	sin experiencia
+LIM	limpieza	150.00	\N
+ADME	administrador	1000.00	experto
+ANF	anfitrion	120.00	\N
+ANI	animadora	200.00	\N
+\.
+
+
+--
+-- TOC entry 2054 (class 0 OID 16403)
+-- Dependencies: 164
+-- Data for Name: cliente_hijo; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY cliente_hijo (id_hijo, id_cli, nom_hij, e_mail) FROM stdin;
+h001	i001	HEYSON DIAZ VERA	diaz4@hotmail.com
+h004	i003	IRVING MAMANI QUISPE	belcom_ax@hotmail.com
+h002	i001	RAUL DIAZ VERA	raulex123@gmail.com
+h003	i002	JESUS BARRIOS CAMPOS	alpines@yahoo.es
+h005	i004	ANDREA CONTRERAS AGUILAR	and_09@gmail.com
+h006	i002	ggttt tt	fff@dd
+\.
+
+
+--
+-- TOC entry 2055 (class 0 OID 16406)
+-- Dependencies: 165
+-- Data for Name: clientes; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY clientes (id_cli, nom_cli, direccion, e_mail, tarjeta) FROM stdin;
+i001	CARLOS DIAZ SANCHEZ	av.ramos larrea123	elegido_12@hotmail.com	si
+i002	LIBIA BARRIOS CANALES	jr.tulipanes 432	libiax_23@hotmail.com	no
+i003	CARLOS MAMANI QUIROZ	calle los heroes 4673	lucae_salva@hotmail.com	si
+i004	MARIA AGUILAR PRADO 	av.28 de julio 45	fenix@gmail.com	si
+\.
+
+
+--
+-- TOC entry 2056 (class 0 OID 16409)
+-- Dependencies: 166
+-- Data for Name: cumpleanios; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY cumpleanios (id_cum, id_hijo, fecha_nac, id_show, id_sucur) FROM stdin;
+0001	h001	2007-11-12	sh001	u001
+0004	h004	2006-07-24	sh004	u001
+0003	h003	2008-06-07	sh003	u003
+0002	h002	2010-01-05	sh002	u004
+0005	h005	2009-09-19	sh002	u006
+\.
+
+
+--
+-- TOC entry 2057 (class 0 OID 16412)
+-- Dependencies: 167
+-- Data for Name: det_boleta; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY det_boleta (nro_serie, nro_doc, cantidad, precio_unit, subtotal, codigos, linea) FROM stdin;
+001	000001	4	5.00	20.00	j001	1
+002	000002	1	5.00	5.00	j001	2
+002	000002	1	6.00	6.00	j002	3
+003	000003	5	4.00	20.00	p002	4
+\.
+
+
+--
+-- TOC entry 2067 (class 0 OID 17075)
+-- Dependencies: 184
+-- Data for Name: disponibilidad_servicios; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY disponibilidad_servicios (id_sucur, id_ser, estado, id) FROM stdin;
+u001	se01	funcionando	1
+u001	se02	funcionando	2
+u002	se04	no operativo	3
+u002	se03	funcionando	4
+u002	se02	funcionando	5
+\.
+
+
+--
+-- TOC entry 2058 (class 0 OID 16415)
+-- Dependencies: 168
+-- Data for Name: empleados; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY empleados (id_emp, nom_emp, id_sucur, id_cargo, domicilio, dni) FROM stdin;
+e012	ADOLFO MOGROVEJO RAMIREZ	u004	JE	calle washintong 342	29365247
+e013	MILAGROS BENAVIDES ALCALA	u006	JE	AV. PERU 765	87462345
+e001	MIGUEL MEJIA PUMA	u001	ADME	av.aldea 453	87654321
+e002	ROSARIO QUISPE SAIRYTUPAC	u001	ANF	jr.elm street 7466	85745543
+e003	ERICA SEGURA DAGA	u002	GUAS	jr.javier prado 453	56348298
+e004	RODRIGO MARTINEZ QUISPE	u003	LIM	av.tacna 9865	75300736
+e005	ANDY CARDENAS VENTURA	u003	CAJS	av. españa 882	24234583
+e006	SERGIO FLORES HERNANDEZ	u004	ADME	calle balra 986	68352684
+e007	ROBERTO GOMEZ LEON	u002	CAJE	av. garcilazo 568	24683578
+e009	MARTIN LINARES ROJAS	u005	JE	urb. casuarinas 321	18874563
+e008	VALERY ARA LAZARTE	u002	JE	jr. camana 925	45673456
+e010	SEBASTIAN ASCENSIO ACHARTE	u001	JE	jr. villa sol 178	98675432
+e011	JOSE LOPEZ GARCIA	u003	JE	urb. maravilla 7836	37297635
+e014	LADY SANDOVAL RUIZ	u006	ANF	AV. Manantial 332	87634856
+e015	LUIS CHAMORRO YARASCA	u006	CAJE	av palmas 234	76549876
+e016	MANUELA ACOSTA SOLANO	u006	CAJE	jr. angeles 456	87654987
+e017	RODRIGO PEREZ LUYO	u006	CAJS	calle los procesres 346	67543987
+\.
+
+
+--
+-- TOC entry 2059 (class 0 OID 16418)
+-- Dependencies: 169
+-- Data for Name: encargado_caja; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY encargado_caja (id_encar_caja, id_caja, id_emp, fecha_caja) FROM stdin;
+ec004	c004	e011	2013-12-03
+ec003	c003	e010	2013-12-02
+ec002	c002	e007	2013-12-02
+ec001	c001	e005	2013-12-02
+ec005	c005	e012	2013-12-03
+ec006	c001	e015	2013-11-03
+ec007	c002	e016	2013-11-04
+ec008	c003	e017	2013-11-05
+ec009	c003	e015	2013-11-06
+\.
+
+
+--
+-- TOC entry 2070 (class 0 OID 17091)
+-- Dependencies: 187
+-- Data for Name: ganador_promo; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY ganador_promo (id_sucur, id_cli, id_prom, id_ganador) FROM stdin;
+u001	i001	pr001	g001
+u002	i002	pr004	g002
+u003	i003	pr005	g003
+\.
+
+
+--
+-- TOC entry 2060 (class 0 OID 16421)
+-- Dependencies: 170
+-- Data for Name: juegos; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY juegos (id_jue, nom_jue, tipo, costo) FROM stdin;
+j001	fruit mania	electrico	5.00
+j007	veggie blast	electrico	5.00
+j005	dirty drivin	electrico	6.00
+j002	astro invasion	electrico	6.00
+j006	after dark	electrico	7.00
+j003	gusanito	mecanico	3.85
+j004	rueda de chicago	mecanico	4.40
+j008	tagada	mecanico	3.85
+j009	carros chocones	mecanico	6.60
+\.
+
+
+--
+-- TOC entry 2068 (class 0 OID 17081)
+-- Dependencies: 185
+-- Data for Name: mantenimiento; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY mantenimiento (id_man, id_sucur, estado) FROM stdin;
+m001	u001	todo correcto
+m002	u002	todo correcto
+m004	u005	correcto 95%
+m003	u004	por revisar
+\.
+
+
+--
+-- TOC entry 2069 (class 0 OID 17086)
+-- Dependencies: 186
+-- Data for Name: persona_man; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY persona_man (id_man, nombre_personal, rugro) FROM stdin;
+m001	electomi	electronica
+m002	servilain	variado
+m003	las vegas	venta juegos
+m004	mecanix	mecanica
+\.
+
+
+--
+-- TOC entry 2061 (class 0 OID 16424)
+-- Dependencies: 171
+-- Data for Name: productos; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY productos (id_prod, nom_prod, costo, descrip) FROM stdin;
+p001	tomatodo_coney	12.00	utensilio
+p002	revista_coney	4.00	publicacion
+p003	polo_coney	10.00	ropa de vestir
+p004	vaso_coney	3.00	utensilio
+p005	carita pintada	18.00	maquillaje
+p006	muñeco coney	25.00	juguete
+p007	cajita magica coney	20.00	sorpresa
+p008	tour diverti coney	80.00	paseo por toda la instalacion incluido juegos
+j001	fruit mania	5.00	juego
+j002	astro invasion	6.00	juego
+j003	gusanito	3.85	juego
+j004	rueda de chicago	4.40	juego
+j005	dirty drivin	6.00	juego
+j006	after dark	7.00	juego
+j007	veggie blast	5.00	juego
+j008	tagada	3.85	juego
+j009	carros chocones	6.60	juego
+sh001	show conwy	800.00	show
+sh002	el payaso fredy	300.00	show
+sh003	teatro star coney	400.00	show
+sh004	malabares magicos	450.00	show
+sh005	los aliens bailarines	200.99	show
+sh006	los muñequines coneymon	600.00	show
+\.
+
+
+--
+-- TOC entry 2062 (class 0 OID 16427)
+-- Dependencies: 172
+-- Data for Name: promociones; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY promociones (id_prom, nom_prom, dia_prom, descrip) FROM stdin;
+pr001	prom recarga	todos	carita pintada gratis
+pr002	martes magico	martes	50% de descuento en juegos mecanicos
+pr003	jueves de adrenalina	jueves	carros chocones qa mitad de precio
+pr004	viernes de relax	viernes	80% de descuento en juegos electricos
+pr005	hora diverti coney	sabado	una entrada gratis al show coney
+\.
+
+
+--
+-- TOC entry 2066 (class 0 OID 17062)
+-- Dependencies: 182
+-- Data for Name: servicios; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY servicios (id_ser, nombre, descrip) FROM stdin;
+se01	animaciones	para eventos
+se02	restaurantes	Podras deleitarte con comidas
+se03	dulceria	Los mas ricos
+se04	sorteos	muchos premios
+se05	guarderia	cuidado de bebes
+\.
+
+
+--
+-- TOC entry 2063 (class 0 OID 16430)
+-- Dependencies: 173
+-- Data for Name: shows; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY shows (id_show, nom_shows, costo, descrip) FROM stdin;
+sh002	el payaso fredy	300.00	la diversion con los mejores chistes
+sh001	show coney	800.00	el mejor y mas divertido show
+sh004	Malabares magicos	450.00	las mejores destrzas y mas divertidas
+sh003	teatro star coney	400.00	compañia de teatro con las historias mas divertidas
+sh005	Los aliens bailarines	200.00	el mejor show de baile
+sh006	los muñequines coneymon	600.00	la familia coney completa con los juegos mas divertidos
+\.
+
+
+--
+-- TOC entry 2064 (class 0 OID 16433)
+-- Dependencies: 174
+-- Data for Name: sucursales; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY sucursales (id_sucur, distrito, direccion, jefe) FROM stdin;
+u001	miraflores	av.resplandor 7654	SEBASTIAN ASCENSIO ACHARTE
+u002	san miguel	av.los celestes 235	VALERY ARA LAZARTE
+u003	la molina	jr. alisos 347	JOSE LOPEZ GARCIA
+u004	san martin de porres	urb. maravilla 7836	ADOLFO MOGROVEJO RAMIREZ
+u005	san isidro	calle washintong 342	MARTIN LINARES ROJAS
+u006	olivos	jr. villa sol 178	MILAGROS BENAVIDES ALCALA
+\.
+
+
+--
+-- TOC entry 2065 (class 0 OID 16436)
+-- Dependencies: 175
+-- Data for Name: ubicacion_juegos; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY ubicacion_juegos (id_jue, id_sucur, num_reparaciones, serie) FROM stdin;
+j001	u001	0	87653472
+j002	u003	0	bd986543
+j003	u005	1	ej87653
+j005	u001	0	w7654562
+j004	u004	0	fd875438
+j006	u002	0	23427831
+j007	u006	1	r44r33
+j008	u002	0	df83645
+j009	u001	0	dr567
+j009	u001	0	gf567
+j009	u001	0	dr234
+j009	u002	0	nvg675
+j009	u002	0	bfd
+j009	u002	0	bvg6533
+j009	u005	0	bvf564
+j009	u001	0	bvtg675
+\.
+
+
+--
+-- TOC entry 1967 (class 2606 OID 16440)
+-- Dependencies: 161 161
+-- Name: cab_boleta_nro_doc_key; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cab_boleta
+    ADD CONSTRAINT cab_boleta_nro_doc_key UNIQUE (nro_doc);
+
+
+--
+-- TOC entry 1969 (class 2606 OID 16442)
+-- Dependencies: 161 161
+-- Name: cab_boleta_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cab_boleta
+    ADD CONSTRAINT cab_boleta_pkey PRIMARY KEY (nro_serie);
+
+
+--
+-- TOC entry 1971 (class 2606 OID 16444)
+-- Dependencies: 162 162
+-- Name: cajas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cajas
+    ADD CONSTRAINT cajas_pkey PRIMARY KEY (id_caja);
+
+
+--
+-- TOC entry 1977 (class 2606 OID 16446)
+-- Dependencies: 163 163
+-- Name: cargo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cargo
+    ADD CONSTRAINT cargo_pkey PRIMARY KEY (id_cargo);
+
+
+--
+-- TOC entry 1979 (class 2606 OID 16448)
+-- Dependencies: 164 164
+-- Name: cliente_hijo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cliente_hijo
+    ADD CONSTRAINT cliente_hijo_pkey PRIMARY KEY (id_hijo);
+
+
+--
+-- TOC entry 1983 (class 2606 OID 16450)
+-- Dependencies: 165 165
+-- Name: clientes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY clientes
+    ADD CONSTRAINT clientes_pkey PRIMARY KEY (id_cli);
+
+
+--
+-- TOC entry 1987 (class 2606 OID 16736)
+-- Dependencies: 166 166
+-- Name: cumpleanios_id_hijo_key; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cumpleanios
+    ADD CONSTRAINT cumpleanios_id_hijo_key UNIQUE (id_hijo);
+
+
+--
+-- TOC entry 1989 (class 2606 OID 16452)
+-- Dependencies: 166 166
+-- Name: cumpleanios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cumpleanios
+    ADD CONSTRAINT cumpleanios_pkey PRIMARY KEY (id_cum);
+
+
+--
+-- TOC entry 2015 (class 2606 OID 16738)
+-- Dependencies: 174 174
+-- Name: direccion; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY sucursales
+    ADD CONSTRAINT direccion UNIQUE (direccion);
+
+
+--
+-- TOC entry 1995 (class 2606 OID 16780)
+-- Dependencies: 168 168
+-- Name: dni; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY empleados
+    ADD CONSTRAINT dni UNIQUE (dni);
+
+
+--
+-- TOC entry 1997 (class 2606 OID 16454)
+-- Dependencies: 168 168
+-- Name: empleados_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY empleados
+    ADD CONSTRAINT empleados_pkey PRIMARY KEY (id_emp);
+
+
+--
+-- TOC entry 1999 (class 2606 OID 16456)
+-- Dependencies: 169 169
+-- Name: encargado_caja_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY encargado_caja
+    ADD CONSTRAINT encargado_caja_pkey PRIMARY KEY (id_encar_caja);
+
+
+--
+-- TOC entry 2023 (class 2606 OID 17080)
+-- Dependencies: 184 184
+-- Name: id; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY disponibilidad_servicios
+    ADD CONSTRAINT id PRIMARY KEY (id);
+
+
+--
+-- TOC entry 2029 (class 2606 OID 17095)
+-- Dependencies: 187 187
+-- Name: id_ganador; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY ganador_promo
+    ADD CONSTRAINT id_ganador PRIMARY KEY (id_ganador);
+
+
+--
+-- TOC entry 1991 (class 2606 OID 16759)
+-- Dependencies: 166 166
+-- Name: id_hijo; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cumpleanios
+    ADD CONSTRAINT id_hijo UNIQUE (id_hijo);
+
+
+--
+-- TOC entry 2025 (class 2606 OID 17085)
+-- Dependencies: 185 185
+-- Name: id_man; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY mantenimiento
+    ADD CONSTRAINT id_man PRIMARY KEY (id_man);
+
+
+--
+-- TOC entry 2021 (class 2606 OID 17066)
+-- Dependencies: 182 182
+-- Name: id_ser; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY servicios
+    ADD CONSTRAINT id_ser PRIMARY KEY (id_ser);
+
+
+--
+-- TOC entry 1973 (class 2606 OID 16866)
+-- Dependencies: 162 162
+-- Name: id_sucur; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cajas
+    ADD CONSTRAINT id_sucur UNIQUE (id_sucur);
+
+
+--
+-- TOC entry 2001 (class 2606 OID 16458)
+-- Dependencies: 170 170
+-- Name: juegos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY juegos
+    ADD CONSTRAINT juegos_pkey PRIMARY KEY (id_jue);
+
+
+--
+-- TOC entry 1993 (class 2606 OID 17016)
+-- Dependencies: 167 167
+-- Name: linea; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY det_boleta
+    ADD CONSTRAINT linea PRIMARY KEY (linea);
+
+
+--
+-- TOC entry 1975 (class 2606 OID 16868)
+-- Dependencies: 162 162
+-- Name: nom_caja; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cajas
+    ADD CONSTRAINT nom_caja UNIQUE (nom_caja);
+
+
+--
+-- TOC entry 1985 (class 2606 OID 16742)
+-- Dependencies: 165 165
+-- Name: nom_cli; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY clientes
+    ADD CONSTRAINT nom_cli UNIQUE (nom_cli);
+
+
+--
+-- TOC entry 1981 (class 2606 OID 16766)
+-- Dependencies: 164 164
+-- Name: nom_hij; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY cliente_hijo
+    ADD CONSTRAINT nom_hij UNIQUE (nom_hij);
+
+
+--
+-- TOC entry 2003 (class 2606 OID 16740)
+-- Dependencies: 170 170
+-- Name: nom_jue; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY juegos
+    ADD CONSTRAINT nom_jue UNIQUE (nom_jue);
+
+
+--
+-- TOC entry 2005 (class 2606 OID 16782)
+-- Dependencies: 171 171
+-- Name: nom_prod; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY productos
+    ADD CONSTRAINT nom_prod UNIQUE (nom_prod);
+
+
+--
+-- TOC entry 2009 (class 2606 OID 16768)
+-- Dependencies: 172 172
+-- Name: nom_prom; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY promociones
+    ADD CONSTRAINT nom_prom UNIQUE (nom_prom);
+
+
+--
+-- TOC entry 2027 (class 2606 OID 17090)
+-- Dependencies: 186 186
+-- Name: nombre_personal; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY persona_man
+    ADD CONSTRAINT nombre_personal PRIMARY KEY (nombre_personal);
+
+
+--
+-- TOC entry 2007 (class 2606 OID 16870)
+-- Dependencies: 171 171
+-- Name: productos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY productos
+    ADD CONSTRAINT productos_pkey PRIMARY KEY (id_prod);
+
+
+--
+-- TOC entry 2011 (class 2606 OID 16462)
+-- Dependencies: 172 172
+-- Name: promociones_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY promociones
+    ADD CONSTRAINT promociones_pkey PRIMARY KEY (id_prom);
+
+
+--
+-- TOC entry 2013 (class 2606 OID 16464)
+-- Dependencies: 173 173
+-- Name: shows_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY shows
+    ADD CONSTRAINT shows_pkey PRIMARY KEY (id_show);
+
+
+--
+-- TOC entry 2017 (class 2606 OID 16466)
+-- Dependencies: 174 174
+-- Name: sucursales_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY sucursales
+    ADD CONSTRAINT sucursales_pkey PRIMARY KEY (id_sucur);
+
+
+--
+-- TOC entry 2019 (class 2606 OID 16468)
+-- Dependencies: 175 175
+-- Name: ubicacion_juegos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY ubicacion_juegos
+    ADD CONSTRAINT ubicacion_juegos_pkey PRIMARY KEY (serie);
+
+
+--
+-- TOC entry 2032 (class 2606 OID 16760)
+-- Dependencies: 1982 165 164
+-- Name: cliente_hijo_id_cli_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY cliente_hijo
+    ADD CONSTRAINT cliente_hijo_id_cli_fkey FOREIGN KEY (id_cli) REFERENCES clientes(id_cli);
+
+
+--
+-- TOC entry 2036 (class 2606 OID 17027)
+-- Dependencies: 2006 167 171
+-- Name: codigos; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY det_boleta
+    ADD CONSTRAINT codigos FOREIGN KEY (codigos) REFERENCES productos(id_prod);
+
+
+--
+-- TOC entry 2033 (class 2606 OID 16743)
+-- Dependencies: 166 164 1978
+-- Name: cumpleanios_id_hijo_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY cumpleanios
+    ADD CONSTRAINT cumpleanios_id_hijo_fkey FOREIGN KEY (id_hijo) REFERENCES cliente_hijo(id_hijo);
+
+
+--
+-- TOC entry 2034 (class 2606 OID 16748)
+-- Dependencies: 173 2012 166
+-- Name: cumpleanios_id_show_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY cumpleanios
+    ADD CONSTRAINT cumpleanios_id_show_fkey FOREIGN KEY (id_show) REFERENCES shows(id_show);
+
+
+--
+-- TOC entry 2035 (class 2606 OID 16753)
+-- Dependencies: 174 166 2016
+-- Name: cumpleanios_id_sucur_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY cumpleanios
+    ADD CONSTRAINT cumpleanios_id_sucur_fkey FOREIGN KEY (id_sucur) REFERENCES sucursales(id_sucur);
+
+
+--
+-- TOC entry 2037 (class 2606 OID 17032)
+-- Dependencies: 1966 167 161
+-- Name: det_boleta_nro_doc_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY det_boleta
+    ADD CONSTRAINT det_boleta_nro_doc_fkey FOREIGN KEY (nro_doc) REFERENCES cab_boleta(nro_doc);
+
+
+--
+-- TOC entry 2039 (class 2606 OID 17042)
+-- Dependencies: 1976 168 163
+-- Name: empleados_id_cargo_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY empleados
+    ADD CONSTRAINT empleados_id_cargo_fkey FOREIGN KEY (id_cargo) REFERENCES cargo(id_cargo);
+
+
+--
+-- TOC entry 2040 (class 2606 OID 17047)
+-- Dependencies: 168 174 2016
+-- Name: empleados_id_sucur_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY empleados
+    ADD CONSTRAINT empleados_id_sucur_fkey FOREIGN KEY (id_sucur) REFERENCES sucursales(id_sucur);
+
+
+--
+-- TOC entry 2041 (class 2606 OID 16845)
+-- Dependencies: 162 1970 169
+-- Name: encargado_caja_id_caja_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY encargado_caja
+    ADD CONSTRAINT encargado_caja_id_caja_fkey FOREIGN KEY (id_caja) REFERENCES cajas(id_caja);
+
+
+--
+-- TOC entry 2042 (class 2606 OID 16850)
+-- Dependencies: 1996 169 168
+-- Name: encargado_caja_id_emp_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY encargado_caja
+    ADD CONSTRAINT encargado_caja_id_emp_fkey FOREIGN KEY (id_emp) REFERENCES empleados(id_emp);
+
+
+--
+-- TOC entry 2030 (class 2606 OID 16891)
+-- Dependencies: 161 1970 162
+-- Name: id_caja; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY cab_boleta
+    ADD CONSTRAINT id_caja FOREIGN KEY (id_caja) REFERENCES cajas(id_caja);
+
+
+--
+-- TOC entry 2050 (class 2606 OID 17133)
+-- Dependencies: 187 165 1982
+-- Name: id_cli; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY ganador_promo
+    ADD CONSTRAINT id_cli FOREIGN KEY (id_cli) REFERENCES clientes(id_cli);
+
+
+--
+-- TOC entry 2048 (class 2606 OID 17118)
+-- Dependencies: 2024 186 185
+-- Name: id_man; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY persona_man
+    ADD CONSTRAINT id_man FOREIGN KEY (id_man) REFERENCES mantenimiento(id_man);
+
+
+--
+-- TOC entry 2046 (class 2606 OID 17108)
+-- Dependencies: 2020 182 184
+-- Name: id_ser; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY disponibilidad_servicios
+    ADD CONSTRAINT id_ser FOREIGN KEY (id_ser) REFERENCES servicios(id_ser);
+
+
+--
+-- TOC entry 2031 (class 2606 OID 16860)
+-- Dependencies: 2016 174 162
+-- Name: id_sucur; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY cajas
+    ADD CONSTRAINT id_sucur FOREIGN KEY (id_sucur) REFERENCES sucursales(id_sucur);
+
+
+--
+-- TOC entry 2045 (class 2606 OID 17103)
+-- Dependencies: 2016 174 184
+-- Name: id_sucur; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY disponibilidad_servicios
+    ADD CONSTRAINT id_sucur FOREIGN KEY (id_sucur) REFERENCES sucursales(id_sucur);
+
+
+--
+-- TOC entry 2047 (class 2606 OID 17113)
+-- Dependencies: 174 2016 185
+-- Name: id_sucur; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY mantenimiento
+    ADD CONSTRAINT id_sucur FOREIGN KEY (id_sucur) REFERENCES sucursales(id_sucur);
+
+
+--
+-- TOC entry 2049 (class 2606 OID 17128)
+-- Dependencies: 187 174 2016
+-- Name: id_sucur; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY ganador_promo
+    ADD CONSTRAINT id_sucur FOREIGN KEY (id_sucur) REFERENCES sucursales(id_sucur);
+
+
+--
+-- TOC entry 2038 (class 2606 OID 17037)
+-- Dependencies: 161 167 1968
+-- Name: nro_serie; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY det_boleta
+    ADD CONSTRAINT nro_serie FOREIGN KEY (nro_serie) REFERENCES cab_boleta(nro_serie);
+
+
+--
+-- TOC entry 2043 (class 2606 OID 16645)
+-- Dependencies: 2000 175 170
+-- Name: ubicacion_juegos_id_jue_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY ubicacion_juegos
+    ADD CONSTRAINT ubicacion_juegos_id_jue_fkey FOREIGN KEY (id_jue) REFERENCES juegos(id_jue);
+
+
+--
+-- TOC entry 2044 (class 2606 OID 16650)
+-- Dependencies: 175 2016 174
+-- Name: ubicacion_juegos_id_sucur_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY ubicacion_juegos
+    ADD CONSTRAINT ubicacion_juegos_id_sucur_fkey FOREIGN KEY (id_sucur) REFERENCES sucursales(id_sucur);
+
+
+--
+-- TOC entry 2075 (class 0 OID 0)
+-- Dependencies: 6
+-- Name: public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON SCHEMA public FROM postgres;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
+-- Completed on 2013-12-12 00:39:26
+
+--
+-- PostgreSQL database dump complete
+--
+
